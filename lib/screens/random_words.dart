@@ -1,6 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
-import 'login_material_page.dart';
+import 'package:hello_me/screens/login_material_page.dart';
+import 'package:provider/provider.dart';
+
+import '../services/auth_repository.dart';
 
 class RandomWords extends StatefulWidget {
   static String tag = 'RandomWords-page';
@@ -15,34 +19,46 @@ class _RandomWordsState extends State<RandomWords> {
   //final _suggestions = generateWordPairs().take(10).toList();
   final _saved = <WordPair>{};
   final _biggerFont = const TextStyle(fontSize: 18.0);
+  bool _loggedIn = false;
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-
-      appBar: AppBar(
-        title: Text('Startup Name Generator'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.star),
-            onPressed: _pushSaved,
-            tooltip: 'Saved Suggestions',
-          ),
-          IconButton(
-            icon: const Icon(Icons.login),
-            onPressed: _pushLogin,
-            tooltip: 'login',
-          ),
-        ],
-      ),
-      body: _buildSuggestions(),
+    return Consumer<AuthRepository>(builder: (context, authRepositoryInst, _)
+    =>
+      Scaffold(
+        appBar: AppBar(
+          title: Text('Startup Name Generator', overflow: TextOverflow.ellipsis,),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.star),
+              onPressed: _pushSaved,
+              tooltip: 'Saved Suggestions',
+            ),
+            IconButton(
+              icon: const Icon(Icons.login),
+              onPressed: _pushLogin,
+              tooltip: 'login',
+            ),
+            if(authRepositoryInst.isAuthenticated)
+              IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed:() async{
+                 await authRepositoryInst.signOut();
+              },
+              tooltip: 'exit_to_app',
+            ),
+          ],
+        ),
+        body: _buildSuggestions(),
+      )
     );
   }
 
   void _pushLogin() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const LoginWidget()),
+      MaterialPageRoute(builder: (context) => LoginWidget()),
     );
   }
+
 
   void _pushSaved() {
     Navigator.of(context).push(
@@ -70,11 +86,14 @@ class _RandomWordsState extends State<RandomWords> {
                       ]
                   ),
                 ),
-                  confirmDismiss: (DismissDirection direction) async {
-                    ScaffoldMessenger.of(context).showSnackBar(deleteSuggestionSnackBar);
+                  confirmDismiss:
+                      (DismissDirection direction) async {
+                        showAlertDialog(context, pair.asPascalCase.toString());
+                    //ScaffoldMessenger.of(context).showSnackBar(deleteSuggestionSnackBar);
                     return false;
                   },
                 onDismissed: (DismissDirection direction) {
+
 
                   }
               );
@@ -155,4 +174,36 @@ class _RandomWordsState extends State<RandomWords> {
       },
     );
   }
+}
+
+showAlertDialog(BuildContext context, String wordpair) {
+
+  // set up the button
+  Widget yesButton = ElevatedButton(
+    child: Text("Yes", style: TextStyle(color: Colors.white)),
+    onPressed: () { },
+  );
+  Widget noButton = ElevatedButton(
+    child: Text("No", style: TextStyle(color: Colors.white),),
+    onPressed: () { },
+  );
+
+  // set up the AlertDialog
+  AlertDialog alert = AlertDialog(
+    title: Text("Delete Suggestion"),
+    content: Text("Are you sure you want to delete " + wordpair +
+        " from your saved suggestions?"),
+    actions: [
+      yesButton,
+      noButton,
+    ],
+  );
+
+  // show the dialog
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
 }
