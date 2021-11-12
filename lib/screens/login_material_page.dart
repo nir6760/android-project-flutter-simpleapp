@@ -1,13 +1,21 @@
+import 'package:english_words/english_words.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hello_me/screens/random_words.dart';
+import 'package:hello_me/services/data_base_favorites.dart';
 import 'package:provider/provider.dart';
 import 'package:hello_me/services/auth_repository.dart';
 
 
 
-class LoginWidget extends StatelessWidget {
-  LoginWidget({Key? key}) : super(key: key);
+
+class LoginWidget extends StatefulWidget {
+  Set<WordPair> _saved;
+  LoginWidget(this._saved , {Key? key}) : super(key: key);
+  @override
+  _LoginWidgetState createState() => _LoginWidgetState();
+}
+class _LoginWidgetState extends State<LoginWidget> {
   bool _loading = false;
   @override
   Widget build(BuildContext context) {
@@ -58,6 +66,7 @@ class LoginWidget extends StatelessWidget {
 
     const loginFailedSnackBar =
     SnackBar(content: Text("There was an error logging into the app"));
+    var authRepositoryInst = Provider.of<AuthRepository>(context, listen: false);
 
 
     return Scaffold(
@@ -74,49 +83,66 @@ class LoginWidget extends StatelessWidget {
               SizedBox(height: 8.0),
               password,
               SizedBox(height: 24.0),
-              Consumer<AuthRepository>(builder: (context, authRepositoryInst, _)
-              => Padding(
+              Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: ElevatedButton(
-                  style: raisedButtonStyle,
-                  child:
-                  authRepositoryInst.status == Status.Authenticating
-                      ? Text((() {
-                    print(" loading");
-                    return "Logging in ...";
-                  })())
-                      : Text((() {
-                    _loading = false;
-                    return "Log In";
-                  })()),
-                  onPressed: _loading? null : () async{
-                    bool loggedIn = await authRepositoryInst.signIn(emailController.text,
-                        passwordController.text);
-                    buildLoading(context); //building CircularProgressIndicator
-                    if(loggedIn == false) {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar
-                        (loginFailedSnackBar);
-                    }else{
-                      Navigator.of(context).pop();
-                      Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => RandomWords()));
-                    }
-                  },
+                child:
+                !_loading?
+                  ElevatedButton(
+                    style: raisedButtonStyle,
+                    child: Text((() {
+                      return "Log In";
+                    })()),
+                    onPressed: () async {
+                      setState(() {
+                        _loading = true;
+                      });
+                      bool loggedIn = false;
+                      if (emailController.text.isNotEmpty &&
+                          emailController.text.isNotEmpty) {
+                        loggedIn =
+                        await authRepositoryInst.signIn(emailController.text,
+                            passwordController.text);
+                      }
+                      setState(() {
+                        _loading = false;
+                      });
 
-              ),
-                  )
-                ),
+                      if (loggedIn == false) {
+                        //Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar
+                        (loginFailedSnackBar);
+
+                      } else {
+                        //Navigator.of(context).pop();
+                        // Navigator.of(context).push(
+                        //     MaterialPageRoute(
+                        //         builder: (context) => const RandomWords()));
+                        DatabaseServiceFavorites? favoritesDb;
+                        favoritesDb =
+                            DatabaseServiceFavorites(uid: authRepositoryInst.user!.uid);
+                        //upload all to cloud
+                        favoritesDb.updateFavoriteByList(widget._saved);
+                        //remove locally
+                        widget._saved= <WordPair>{};
+                        Navigator.pop(context);
+                      }
+                    }
+              )
+              :
+                Center(child:CircularProgressIndicator())
+              )
+
             ]
         ),
       ),
     );
   }
   buildLoading(BuildContext context) {
-    _loading = true;
+
     print("should wait UI");
     return showDialog(
         context: context,
+        useRootNavigator: false,
         barrierDismissible: false,
         builder: (BuildContext context) {
           return Center(
