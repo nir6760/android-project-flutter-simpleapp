@@ -1,17 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:english_words/english_words.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:english_words/english_words.dart';
-import 'package:hello_me/screens/login_material_page.dart';
-import 'package:provider/provider.dart';
-import 'package:hello_me/services/auth_repository.dart';
 import 'package:hello_me/screens/favorites_screen.dart';
+import 'package:hello_me/screens/login_material_page.dart';
+import 'package:hello_me/services/auth_repository.dart';
 import 'package:hello_me/services/data_base_favorites.dart';
+import 'package:hello_me/snappingSheet/propile_snapping.dart';
+import 'package:provider/provider.dart';
 
 class RandomWords extends StatefulWidget {
   static String tag = 'RandomWords-page';
+
   const RandomWords({Key? key}) : super(key: key);
 
   @override
@@ -21,8 +22,9 @@ class RandomWords extends StatefulWidget {
 class _RandomWordsState extends State<RandomWords> {
   bool loggedIn = false;
   final _suggestions = <WordPair>[];
+
   //final _suggestions = generateWordPairs().take(10).toList();
-  late var _saved = <WordPair>{};
+  late final _saved = <WordPair>{};
   final _biggerFont = const TextStyle(fontSize: 18.0);
   DatabaseServiceFavorites? favoritesDb;
 
@@ -30,43 +32,42 @@ class _RandomWordsState extends State<RandomWords> {
   void initState() {
     super.initState();
   }
+
   // merge local saved set with cloud
-  void mergeSaved() async{
-    var l = await  favoritesDb!.getFavorites();
+  void mergeSaved() async {
+    var l = await favoritesDb!.getFavorites();
     _saved.addAll(l);
   }
+
   @override
   Widget build(BuildContext context) {
-    print('building');
-    return Consumer<AuthRepository>(builder: (context, authRepositoryInst, _){
-
-      if(loggedIn==false && authRepositoryInst.isAuthenticated){
+    return Consumer<AuthRepository>(builder: (context, authRepositoryInst, _) {
+      if (loggedIn == false && authRepositoryInst.isAuthenticated) {
         favoritesDb =
             DatabaseServiceFavorites(uid: authRepositoryInst.user!.uid);
         favoritesDb!.updateFavoriteByList(_saved); //upload all to cloud
-        var l =  favoritesDb!.getFavorites();
+        var l = favoritesDb!.getFavorites();
         // merge with cloud before display
         mergeSaved();
-        loggedIn=true;
+        loggedIn = true;
       }
 
-
-      return
-      Scaffold(
+      return Scaffold(
         appBar: AppBar(
           title: Center(
-            child: RichText(text: const TextSpan(text: 'Startup Name Generator',
-                style: TextStyle(fontSize: 20)),
+            child: RichText(
+              text: const TextSpan(
+                  text: 'Startup Name Generator',
+                  style: TextStyle(fontSize: 20)),
             ),
           ),
           actions: [
-
             IconButton(
               icon: const Icon(Icons.star),
               onPressed: _pushSaved,
               tooltip: 'Saved Suggestions',
             ),
-            if(authRepositoryInst.isAuthenticated)
+            if (authRepositoryInst.isAuthenticated)
               IconButton(
                 icon: const Icon(Icons.logout),
                 onPressed: () async {
@@ -85,22 +86,20 @@ class _RandomWordsState extends State<RandomWords> {
           ],
         ),
         body: FutureBuilder(
-          future: loggedIn? favoritesDb!.getFavorites():null,
-            builder: (BuildContext context, AsyncSnapshot<Set<WordPair>> _saved){
-            if(_saved.connectionState == ConnectionState.done){
-              if(_saved.hasError){
+          future: loggedIn ? favoritesDb!.getFavorites() : null,
+          builder: (BuildContext context, AsyncSnapshot<Set<WordPair>> _saved) {
+            if (_saved.connectionState == ConnectionState.done) {
+              if (_saved.hasError) {
                 return const Text("Sorry, an error occurred");
               }
-              return _buildSuggestions(authRepositoryInst);
-            }else{
+              return ProfileSnapping(_buildSuggestions(authRepositoryInst));
+            } else {
               return listView();
             }
-
-            },
+          },
         ),
       );
-    }
-    );
+    });
   }
 
   void _pushLogin() {
@@ -109,65 +108,60 @@ class _RandomWordsState extends State<RandomWords> {
     );
   }
 
-
-  void _pushSaved() async{
-
-    Navigator.of(context).push(
-      materialPageRouteFavorites(context, _saved, favoritesDb),
-    ).then((_) => setState(() {}));
+  void _pushSaved() async {
+    Navigator.of(context)
+        .push(
+          materialPageRouteFavorites(context, _saved, favoritesDb),
+        )
+        .then((_) => setState(() {}));
   }
-
-
 
   Widget _buildSuggestions(AuthRepository authRepositoryInst) {
     return StreamBuilder(
-      stream: FirebaseFirestore.instance.collection('users').snapshots(),
+        stream: FirebaseFirestore.instance.collection('users').snapshots(),
         //listening to users stream
-      builder: (context, snapshot) {
-        return listView();
-      }
-    );
+        builder: (context, snapshot) {
+          return listView();
+        });
   }
 
   ListView listView() {
     return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          // The itemBuilder callback is called once per suggested
-          // word pairing, and places each suggestion into a ListTile
-          // row. For even rows, the function adds a ListTile row for
-          // the word pairing. For odd rows, the function adds a
-          // Divider widget to visually separate the entries. Note that
-          // the divider may be difficult to see on smaller devices.
-          itemBuilder: (BuildContext _context, int i) {
-            // Add a one-pixel-high divider widget before each row
-            // in the ListView.
-            if (i.isOdd) {
-              return Divider();
-            }
-
-            // The syntax "i ~/ 2" divides i by 2 and returns an
-            // integer result.
-            // For example: 1, 2, 3, 4, 5 becomes 0, 1, 1, 2, 2.
-            // This calculates the actual number of word pairings
-            // in the ListView,minus the divider widgets.
-            final int index = i ~/ 2;
-            // If you've reached the end of the available word
-            // pairings...
-            if (index >= _suggestions.length) {
-              // ...then generate 10 more and add them to the
-              // suggestions list.
-              _suggestions.addAll(generateWordPairs().take(10));
-            }
-            return _buildRow(_suggestions[index], favoritesDb);
-
+        padding: const EdgeInsets.all(16),
+        // The itemBuilder callback is called once per suggested
+        // word pairing, and places each suggestion into a ListTile
+        // row. For even rows, the function adds a ListTile row for
+        // the word pairing. For odd rows, the function adds a
+        // Divider widget to visually separate the entries. Note that
+        // the divider may be difficult to see on smaller devices.
+        itemBuilder: (BuildContext _context, int i) {
+          // Add a one-pixel-high divider widget before each row
+          // in the ListView.
+          if (i.isOdd) {
+            return Divider();
           }
-      );
+
+          // The syntax "i ~/ 2" divides i by 2 and returns an
+          // integer result.
+          // For example: 1, 2, 3, 4, 5 becomes 0, 1, 1, 2, 2.
+          // This calculates the actual number of word pairings
+          // in the ListView,minus the divider widgets.
+          final int index = i ~/ 2;
+          // If you've reached the end of the available word
+          // pairings...
+          if (index >= _suggestions.length) {
+            // ...then generate 10 more and add them to the
+            // suggestions list.
+            _suggestions.addAll(generateWordPairs().take(10));
+          }
+          return _buildRow(_suggestions[index], favoritesDb);
+        });
   }
 
   Widget _buildRow(WordPair pair, DatabaseServiceFavorites? favoritesDb) {
-
     final alreadySaved = _saved.contains(pair);
-    var authRepositoryInst = Provider.of<AuthRepository>(context, listen: false);
+    var authRepositoryInst =
+        Provider.of<AuthRepository>(context, listen: false);
 
     return ListTile(
       title: Text(
@@ -183,13 +177,13 @@ class _RandomWordsState extends State<RandomWords> {
         setState(() {
           if (alreadySaved) {
             _saved.remove(pair);
-            if(authRepositoryInst.isAuthenticated){
+            if (authRepositoryInst.isAuthenticated) {
               favoritesDb!.deleteFavorites(pair);
             }
           } else {
             print(pair);
             _saved.add(pair);
-            if(authRepositoryInst.isAuthenticated){
+            if (authRepositoryInst.isAuthenticated) {
               favoritesDb!.updateFavorites(pair);
             }
           }
@@ -197,7 +191,4 @@ class _RandomWordsState extends State<RandomWords> {
       },
     );
   }
-
-
 }
-

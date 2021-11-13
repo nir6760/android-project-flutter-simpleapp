@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 import 'package:hello_me/screens/random_words.dart';
 import 'package:hello_me/services/data_base_favorites.dart';
+import 'package:hello_me/snappingSheet/propile_snapping.dart';
 import 'package:provider/provider.dart';
 
 MaterialPageRoute<void> materialPageRouteFavorites(BuildContext context,
@@ -108,12 +109,14 @@ MaterialPageRoute<void> materialPageRouteFavorites(BuildContext context,
                 ),
                 title: const Text('Saved Suggestions'),
               ),
-              body: ListView(children: divided),
+              body: (favoritesDb!= null)? ProfileSnapping(listView(divided)):listView(divided),
             );
           },
         );
       }
   );
 }
+
+ListView listView(List<Widget> divided) => ListView(children: divided);
 
 
