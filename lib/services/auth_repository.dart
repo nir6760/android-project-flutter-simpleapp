@@ -13,12 +13,15 @@ class AuthRepository with ChangeNotifier {
     _user = _auth.currentUser;
     _onAuthStateChanged(_user);
   }
+
   //notifies about changes in the user sign in state (sign in or sign out)
   Stream<User?> get onAuthStateChanged => _auth.authStateChanges();
+
   // GET UID
   Future<String> getCurrentUID() async {
     return _auth.currentUser!.uid;
   }
+
   Status get status => _status;
 
   User? get user => _user;

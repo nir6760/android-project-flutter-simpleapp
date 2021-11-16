@@ -2,11 +2,9 @@ import 'package:english_words/english_words.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:hello_me/screens/random_words.dart';
+import 'package:hello_me/services/auth_repository.dart';
 import 'package:hello_me/services/data_base_favorites.dart';
 import 'package:provider/provider.dart';
-import 'package:hello_me/services/auth_repository.dart';
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 class LoginWidget extends StatefulWidget {
   Set<WordPair> _saved;
@@ -190,6 +188,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
+                      obscureText: true,
                       decoration: InputDecoration(
                         hintText: 'Password',
                         contentPadding:
@@ -224,35 +223,31 @@ class _LoginWidgetState extends State<LoginWidget> {
                         });
                         bool loggedIn = false;
                         UserCredential? newUser;
-                        if (newPassword == passwordConfirmController.text) {
-                          newUser = await authRepositoryInst.signUp(
-                              newEmail, newPassword);
-                        }
-
-                        setState(() {
-                          _loading_confirmation = false;
-                        });
-
+                        newUser = await authRepositoryInst.signUp(
+                            newEmail, newPassword);
                         if (newUser == null) {
                           loggedIn == false;
                           print('no new user');
                           //Navigator.of(context).pop();
                           ScaffoldMessenger.of(context)
-                              .showSnackBar(confirmFailedSnackBar);
-                        } else {
-                          //Navigator.pop(context);
-                          ScaffoldMessenger.of(context)
                               .showSnackBar(signinFailedSnackBar);
+                        } else {
                           print('new user created');
-                          // DatabaseServiceFavorites? favoritesDb;
-                          // favoritesDb =
-                          //     DatabaseServiceFavorites(uid: authRepositoryInst.user!.uid);
-                          // //upload all to cloud
-                          // favoritesDb.updateFavoriteByList(widget._saved);
-                          // //remove locally
-                          // widget._saved= <WordPair>{};
-                          // Navigator.pop(context);
+                          DatabaseServiceFavorites? favoritesDb;
+                          favoritesDb = DatabaseServiceFavorites(
+                              uid: authRepositoryInst.user!.uid);
+                          await favoritesDb.addUserDoc(newEmail);
+                          //upload all to cloud
+                          favoritesDb.updateFavoriteByList(widget._saved);
+                          //remove locally
+                          widget._saved = <WordPair>{};
+
+                          Navigator.pop(context); // from modal to log in
+                          Navigator.pop(context); //from log in to random_words
                         }
+                        setState(() {
+                          _loading_confirmation = false;
+                        });
                       }
                     },
                   )),

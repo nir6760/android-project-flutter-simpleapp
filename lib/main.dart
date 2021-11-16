@@ -11,6 +11,7 @@ void main() {
 
 class App extends StatelessWidget {
   final Future<FirebaseApp> _initialization = Firebase.initializeApp();
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -25,7 +26,7 @@ class App extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.done) {
           return MyApp();
         }
-        return Center(child: CircularProgressIndicator());
+        return const Center(child: CircularProgressIndicator());
       },
     );
   }
@@ -35,18 +36,17 @@ class MyApp extends StatelessWidget {
   final routes = <String, WidgetBuilder>{
     RandomWords.tag: (context) => RandomWords(),
   };
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_)=>AuthRepository.instance(),
+      create: (_) => AuthRepository.instance(),
       child: MaterialApp(
         title: 'Startup Name Generator',
         theme: ThemeData(
           primaryColor: Colors.deepPurple,
           primarySwatch: Colors.deepPurple,
-          appBarTheme: const AppBarTheme(
-
-          ),
+          appBarTheme: const AppBarTheme(),
         ),
         home: RandomWords(),
         routes: routes,
@@ -54,9 +54,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-

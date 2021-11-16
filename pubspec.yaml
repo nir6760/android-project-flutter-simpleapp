@@ -35,6 +35,10 @@ dependencies:
   provider: ^6.0.1
   snapping_sheet: ^3.1.0
   modal_bottom_sheet: ^2.0.0
+  firebase_storage: ^8.0.0
+  #file_picker: ^4.2.3
+  image_picker: ^0.8.4+4 # was replaced to file_picker
+
 
 
   # The following adds the Cupertino Icons font to your application.
