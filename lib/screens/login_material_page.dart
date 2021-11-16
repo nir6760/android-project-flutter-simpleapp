@@ -17,13 +17,11 @@ class LoginWidget extends StatefulWidget {
 
 class _LoginWidgetState extends State<LoginWidget> {
   bool _loading = false;
-  bool _loading_confirmation = false;
   static const loginFailedSnackBar =
       SnackBar(content: Text("There was an error logging into the app"));
   static const signinFailedSnackBar =
       SnackBar(content: Text("There was an error sign into the app"));
-  static const confirmFailedSnackBar =
-      SnackBar(content: Text("Confirmation failed"));
+
 
   @override
   Widget build(BuildContext context) {
@@ -129,8 +127,8 @@ class _LoginWidgetState extends State<LoginWidget> {
                   : Center(child: CircularProgressIndicator())),
           Padding(
               padding: const EdgeInsets.fromLTRB(10, 1, 10, 2),
-              child: !_loading_confirmation
-                  ? ElevatedButton(
+              child: !_loading ?
+              ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         primary: Colors.blue,
                         padding: const EdgeInsets.all(12),
@@ -152,7 +150,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                           return;
                         }
                       })
-                  : const Center(child: CircularProgressIndicator()))
+                  : null)
         ]),
       ),
     );
@@ -219,7 +217,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                     onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         setState(() {
-                          _loading_confirmation = true;
+                          _loading = true;
                         });
                         bool loggedIn = false;
                         UserCredential? newUser;
@@ -246,7 +244,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                           Navigator.pop(context); //from log in to random_words
                         }
                         setState(() {
-                          _loading_confirmation = false;
+                          _loading = false;
                         });
                       }
                     },
